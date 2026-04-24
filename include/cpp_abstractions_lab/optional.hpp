@@ -1,4 +1,15 @@
 #pragma once
+#include <exception>
+
+
+class bad_optional_access : public std::exception{
+public:
+    bad_optional_access() {}
+    
+    const char* what() const noexcept override {
+        return "bad optional access";
+    }
+};
 
 
 struct nullopt_t{

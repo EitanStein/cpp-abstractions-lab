@@ -1,5 +1,4 @@
 #include "cpp_abstractions_lab/optional.hpp"
-#include <optional>
 #include <iostream>
 
 int main(){
@@ -7,7 +6,7 @@ int main(){
     try{
         int z = x.value();
     }
-    catch(const std::bad_optional_access& e){
+    catch(const bad_optional_access& e){
         std::cout << e.what() << "\n";
     }
     

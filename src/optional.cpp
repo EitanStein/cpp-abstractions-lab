@@ -1,6 +1,5 @@
 #include "cpp_abstractions_lab/optional.hpp"
-
-#include <optional> // including the library for the exception
+#include <exception>
 #include <utility>
 
 Optional::Optional(const Optional& other): has_val(other.has_val), val(other.val) {}
@@ -28,7 +27,7 @@ bool Optional::operator!=(int other) const {return !(*this==other);};
 bool Optional::has_value() const {return has_val;}
 int Optional::value() const {
     if(!has_val)
-        throw std::bad_optional_access();
+        throw bad_optional_access();
     
     return val;
 }
