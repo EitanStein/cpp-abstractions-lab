@@ -41,6 +41,7 @@ public:
     {
         assign_new_storage(*(other.get_storage_ptr()));
     }
+    Optional(const nullopt_t&): has_val(false) {}
     Optional(Optional&& other) noexcept: has_val(std::move(other.has_val))
     {
         assign_new_storage(std::move(*other.get_storage_ptr()));
@@ -51,6 +52,12 @@ public:
         reset();
     }
 
+    Optional& operator=(const nullopt_t& other)
+    {
+        reset();
+
+        return *this;
+    }
     Optional& operator=(const Optional& other)
     {
         if(!other.has_val)
@@ -100,9 +107,11 @@ public:
 
         return (*get_storage_ptr() == other);
     }
+    bool operator==(const nullopt_t& other) const { return !has_val; }
 
     bool operator!=(const Optional& other) const { return !(*this==other); };
     bool operator!=(const T& other) const { return !(*this==other); };
+    bool operator!=(const nullopt_t& other) const { return has_val; }
 
 
     bool has_value() const { return has_val; }
