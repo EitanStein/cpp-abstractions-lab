@@ -26,5 +26,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(cpp_abstractions_lab INTERFACE)
 target_include_directories(cpp_abstractions_lab INTERFACE include)
 
-add_executable(optional_demo examples/optional_demo.cpp)
+add_executable(optional_demo examples/optional_demo.cpp src/optional.cpp)
 target_link_libraries(optional_demo cpp_abstractions_lab)
