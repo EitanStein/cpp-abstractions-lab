@@ -26,26 +26,28 @@ private:
     bool has_val;
 
     void assign_new_storage(const T& val) { new (storage) T(val); }
-    void assign_new_storage(T&& val) { new (storage) T(val); }
+    void assign_new_storage(T&& val) { new (storage) T(std::move(val)); }
 
-    T* get_storage_ptr() { return reinterpret_cast<T*>(storage);}
-    const T* get_storage_ptr() const { return reinterpret_cast<const T*>(storage);}
+    T* get_storage_ptr() { return std::launder(reinterpret_cast<T*>(storage));}
+    const T* get_storage_ptr() const { return std::launder(reinterpret_cast<const T*>(storage));}
 public:
     Optional() : has_val(false) {}
-    Optional(nullopt_t) : has_val(false) {}
     Optional(const T& val) : has_val(true)
     {
         assign_new_storage(val);
     }
     Optional(const Optional& other): has_val(other.has_val) 
     {
-        assign_new_storage(*(other.get_storage_ptr()));
+        if(other.has_val)
+            assign_new_storage(*(other.get_storage_ptr()));
     }
     Optional(const nullopt_t&): has_val(false) {}
-    Optional(Optional&& other) noexcept: has_val(std::move(other.has_val))
+    Optional(Optional&& other) noexcept: has_val(other.has_val)
     {
-        assign_new_storage(std::move(*other.get_storage_ptr()));
-        other.has_val = false;
+        if(other.has_val){
+            assign_new_storage(std::move(*other.get_storage_ptr()));
+            other.has_val = false;
+        }
     }
 
     ~Optional() noexcept {
@@ -61,7 +63,10 @@ public:
     Optional& operator=(const Optional& other)
     {
         if(!other.has_val)
+        {
             reset();
+            return *this;
+        }
 
         if(!has_val){
             assign_new_storage(*other.get_storage_ptr());
@@ -76,7 +81,10 @@ public:
     Optional<T>& operator=(Optional<T>&& other)
     {
         if(!other.has_val)
+        {
             reset();
+            return *this;
+        }
 
         if(!has_val){
             assign_new_storage(std::move(*other.get_storage_ptr()));
@@ -122,7 +130,14 @@ public:
         
         return *get_storage_ptr();
     }
-    const T& value_or(const T& default_value) const
+    T& value()
+    {
+        if(!has_val)
+            throw bad_optional_access();
+        
+        return *get_storage_ptr();
+    }
+    T value_or(T default_value) const
     {
         if(!has_val)
             return default_value;
