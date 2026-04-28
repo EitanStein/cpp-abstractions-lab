@@ -108,7 +108,10 @@ public:
     template<typename T>
     Variant(const T& value) { assign_new_value_type<T>(value); }
     template<typename T>
-    Variant(T&& value) noexcept { assign_new_value_type<T>(std::move(value)); }
+    Variant(T&& value) { 
+        using U = std::remove_cvref_t<T>;
+        assign_new_value_type<U>(std::forward<T>(value)); 
+    }
 
     ~Variant(){ 
 
