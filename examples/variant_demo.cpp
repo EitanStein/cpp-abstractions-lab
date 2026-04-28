@@ -1,11 +1,36 @@
 #include "../include/cpp_abstractions_lab/variant.hpp"
 #include <iostream>
+#include <string>
 
+
+struct MyStruct{
+    int x;
+    int y;
+    double z;
+    bool flag;
+};
 
 int main(){
 
-    Variant<int, double> v(4.4);
+    Variant<int, double, std::string, MyStruct> v(4.4);
+
     double x = v.get<double>();
+    try{
+        v.get<std::string>();
+    }
+    catch(bad_variant_access& e){
+        std::cout << e.what() << "\n";
+    }
+
+    v = std::string("hello");
+
+    std::cout << v.get<std::string>() << "\n";
+
+    MyStruct my_struct{1,2,4.0,true};
+    v = my_struct;
+
+    std::cout << v.get<MyStruct>().z << "\n";
+
 
     return 0;
 }

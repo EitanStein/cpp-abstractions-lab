@@ -43,10 +43,20 @@ public:
 };
 
 
+template<typename T>
+static void erase_storage(void* storage_ptr) {
+    T* ptr = std::launder(reinterpret_cast<T*>(storage_ptr));
+    ptr->~T();
+}
+
+
+
+
 template<typename... Types>
 class Variant{
 private:
     static constexpr size_t num_types = sizeof...(Types);
+    static constexpr size_t invalid_type = num_types;
     static constexpr size_t max_size = std::max({sizeof(Types)...});
     static constexpr size_t max_align = std::max({alignof(Types)...});
 
@@ -54,25 +64,86 @@ private:
 
     alignas(max_align) std::byte storage[max_size];
 
-    template<typename T> // TODO catch failed assignment to default to invalid type
-    void assign_value(const T& val){ new (storage) T(val); type_index = index_of<T, Types...>::value; }
     template<typename T>
-    void assign_value(T&& val){ new (storage) T(std::move(val)); type_index = index_of<T, Types...>::value; }
-
-    template<typename T>
-    void erase_storage() noexcept {
-        T* storage_ptr = std::launder(reinterpret_cast<T*>(storage));
-        storage_ptr->~T();
-
-        type_index = num_types;
+    void assign_new_value_type(const T& val) noexcept { 
+        try{
+            new (storage) T(val); 
+            type_index = index_of<T, Types...>::value;
+        }
+        catch(std::exception& e){
+            type_index = invalid_type;
+        }
     }
+    template<typename T>
+    void assign_new_value_type(T&& val) noexcept { 
+        try{
+            new (storage) T(std::move(val)); 
+            type_index = index_of<T, Types...>::value; 
+        }
+        catch(std::exception& e){
+            type_index = invalid_type;
+        }
+    }
+
+    template<typename T> // assumes correct type
+    void assign_value(const T& val){
+        T* storage_ptr = std::launder(reinterpret_cast<T*>(storage));
+        *storage_ptr = val;
+    }
+    template<typename T>
+    void assign_value(T&& val){ 
+        T* storage_ptr = std::launder(reinterpret_cast<T*>(storage));
+        *storage_ptr = std::move(val);
+    }
+
+
+    using destroy_fn = void(*)(void*);
+
+    static constexpr destroy_fn destroy_table[] = {
+        &erase_storage<Types>...
+    };
 
 public:
     Variant() {}
     template<typename T>
-    Variant(const T& value) { assign_value(value); } // TODO
+    Variant(const T& value) { assign_new_value_type<T>(value); }
     template<typename T>
-    Variant(T&& value) { assign_value(std::move(value)); } // TODO
+    Variant(T&& value) noexcept { assign_new_value_type<T>(std::move(value)); }
+
+    ~Variant(){ 
+
+        destroy_table[type_index](storage);
+        type_index = invalid_type;
+    }
+
+    template<typename T>
+    Variant& operator=(const T& value){
+        constexpr size_t index = index_of<T, Types...>::value;
+        if(index != type_index){
+            destroy_table[type_index](storage);
+            assign_new_value_type<T>(value);
+        }
+        else{
+            assign_value<T>(value);
+        }
+
+        return *this;
+    }
+
+    template<typename T>
+    Variant& operator=(T&& value){
+        using U = std::remove_cvref_t<T>;
+        constexpr size_t index = index_of<U, Types...>::value;
+        if(index != type_index){
+            destroy_table[type_index](storage);
+            assign_new_value_type<U>(std::forward<T>(value));
+        }
+        else{
+            assign_value<U>(std::forward<T>(value));
+        }
+
+        return *this;
+    }
 
     template<size_t I>
     auto& get(){
