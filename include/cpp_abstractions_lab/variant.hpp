@@ -3,6 +3,8 @@
 #include <utility>
 #include <cstddef>
 #include <algorithm>
+#include <type_traits>
+
 
 template<typename T, typename... Types>
 struct index_of;
@@ -50,6 +52,7 @@ static void erase_storage(void* storage_ptr) {
 }
 
 
+inline constexpr size_t variant_npos = -1;
 
 
 template<typename... Types>
@@ -71,7 +74,7 @@ private:
             type_index = index_of<T, Types...>::value;
         }
         catch(std::exception& e){
-            type_index = invalid_type;
+            type_index = variant_npos;
         }
     }
     template<typename T>
@@ -81,7 +84,7 @@ private:
             type_index = index_of<T, Types...>::value; 
         }
         catch(std::exception& e){
-            type_index = invalid_type;
+            type_index = variant_npos;
         }
     }
 
@@ -116,7 +119,7 @@ public:
     ~Variant(){ 
 
         destroy_table[type_index](storage);
-        type_index = invalid_type;
+        type_index = variant_npos;
     }
 
     template<typename T>
@@ -159,9 +162,52 @@ public:
         return *std::launder(reinterpret_cast<Type*>(storage));
     }
 
+    template<size_t I>
+    constexpr auto* get_if() const{
+        using Type = typename type_at<I, Types...>::type;
+
+        if(type_index != I)
+            return nullptr;
+
+        
+        return std::launder(reinterpret_cast<Type*>(storage));
+    }
+    template<size_t I>
+    constexpr const auto* get_if() const{
+        using Type = typename type_at<I, Types...>::type;
+
+        if(type_index != I)
+            return nullptr;
+
+        return std::launder(reinterpret_cast<const Type*>(storage));
+    }
+
     template<typename T>
     auto& get(){
         constexpr size_t index = index_of<T, Types...>::value;
         return get<index>();
     }
+
+    template<typename T>
+    constexpr T* get_if() const{
+        constexpr size_t index = index_of<T, Types...>::value;
+
+        if(type_index != index)
+            return nullptr;
+
+        return std::launder(reinterpret_cast<T*>(storage));
+    }
+
+    template<typename T>
+    constexpr const T* get_if() const{
+        constexpr size_t index = index_of<T, Types...>::value;
+
+        if(type_index != index)
+            return nullptr;
+
+        return std::launder(reinterpret_cast<const T*>(storage));
+    }
+
+    constexpr bool valueless_by_exception() const noexcept{ return variant_npos == type_index; }
+    constexpr size_t index() const { return type_index; }
 };
