@@ -63,6 +63,12 @@ static void move_construct(void* dest_storage, void* src_storage) noexcept{
     new (dest_storage) T(std::move(*static_cast<T*>(src_storage))); 
 }
 
+// TODO generic way to do all comparisons
+template<typename T>
+static bool compare_eq(const void* storage1, const void* storage2) noexcept{
+    return (*static_cast<const T*>(storage1) == *static_cast<const T*>(storage2)); 
+}
+
 
 inline constexpr size_t variant_npos = -1;
 
@@ -126,6 +132,12 @@ private:
 
     static constexpr move_construct_fn move_construct_table[] = {
         &move_construct<Types>...
+    };
+
+
+    using compare_eq_fn = bool(*)(const void*, const void*);
+    static constexpr compare_eq_fn compare_eq_table[] = {
+        &compare_eq<Types>...
     };
 
 public:
@@ -314,4 +326,17 @@ public:
     constexpr bool valueless_by_exception() const noexcept{ return variant_npos == type_index; }
     constexpr size_t index() const { return type_index; }
 
+    bool operator==(const Variant& other) const{
+        if(valueless_by_exception() || other.valueless_by_exception())
+            return (valueless_by_exception() && other.valueless_by_exception());
+
+        if(type_index != other.type_index)
+            return false;
+
+        return compare_eq_table[type_index](static_cast<const void*>(storage), static_cast<const void*>(other.storage));
+    }
+
+    bool operator!=(const Variant& other) const{
+        return !(*this == other);
+    }
 };

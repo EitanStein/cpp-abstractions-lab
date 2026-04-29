@@ -8,6 +8,8 @@ struct MyStruct{
     int y;
     double z;
     bool flag;
+
+    bool operator==(const MyStruct&) const {return false;}
 };
 
 int main(){
@@ -50,6 +52,11 @@ int main(){
         // v = v2; // ERROR not the same variant types so can't copy
     }
 
+    v = 2.0;
+    {
+        Variant<int, double, std::string, MyStruct> v2{2.0};
+        std::cout << (v == v2) << "\n";
+    }
 
     return 0;
 }
