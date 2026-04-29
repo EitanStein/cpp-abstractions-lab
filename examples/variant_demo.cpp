@@ -32,5 +32,24 @@ int main(){
     std::cout << v.get<MyStruct>().z << "\n";
 
 
+    {
+        Variant<int, double, std::string, MyStruct> v2{MyStruct{1,2,5.5,true}};
+        v = v2;
+    }
+    std::cout << v.get<MyStruct>().z << "\n";
+    
+    {
+        Variant<int, double, std::string, MyStruct> v2{std::string("string here")};
+        v = std::move(v2);
+    }
+    std::cout << v.get<std::string>() << "\n";
+
+
+    {
+        Variant<int, double, std::string> v2{std::string("string here")};
+        // v = v2; // ERROR not the same variant types so can't copy
+    }
+
+
     return 0;
 }

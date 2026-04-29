@@ -52,14 +52,24 @@ static void erase_storage(void* storage_ptr) {
 }
 
 
+
+template<typename T>
+static void copy_construct(void* dest_storage, const void* src_storage){
+    new (dest_storage) T(*static_cast<const T*>(src_storage)); 
+}
+
+template<typename T>
+static void move_construct(void* dest_storage, void* src_storage) noexcept{
+    new (dest_storage) T(std::move(*static_cast<T*>(src_storage))); 
+}
+
+
 inline constexpr size_t variant_npos = -1;
 
 
 template<typename... Types>
 class Variant{
 private:
-    static constexpr size_t num_types = sizeof...(Types);
-    static constexpr size_t invalid_type = num_types;
     static constexpr size_t max_size = std::max({sizeof(Types)...});
     static constexpr size_t max_align = std::max({alignof(Types)...});
 
@@ -106,15 +116,59 @@ private:
         &erase_storage<Types>...
     };
 
+    using copy_fn = void(*)(void*, const void*);
+
+    static constexpr copy_fn copy_construct_table[] = {
+        &copy_construct<Types>...
+    };
+
+    using move_construct_fn = void(*)(void*, void*) noexcept;
+
+    static constexpr move_construct_fn move_construct_table[] = {
+        &move_construct<Types>...
+    };
+
 public:
-    Variant() {}
+    constexpr Variant() {}
+    constexpr Variant(const Variant& other){
+        if(other.valueless_by_exception())
+        {
+            type_index = variant_npos;
+            return;
+        }
+
+        try{
+            copy_construct_table[other.type_index](static_cast<void*>(storage), static_cast<const void*>(other.storage));
+            type_index = other.type_index; 
+        }
+        catch(std::exception& e){
+            type_index = variant_npos;
+        }
+    }
+    constexpr Variant(Variant&& other) noexcept{
+        if(other.valueless_by_exception())
+        {
+            type_index = variant_npos;
+            return;
+        }
+
+        try{
+            move_construct_table[other.type_index](static_cast<void*>(storage), static_cast<void*>(other.storage));
+            type_index = other.type_index; 
+        }
+        catch(std::exception& e){
+            type_index = variant_npos;
+        }
+    }
+
     template<typename T>
-    Variant(const T& value) { assign_new_value_type<T>(value); }
-    template<typename T>
-    Variant(T&& value) { 
+    requires ((std::same_as<std::remove_cvref_t<T>, Types> || ...) || 
+            (std::same_as<T, Types> || ...))
+    constexpr Variant(T&& value) { 
         using U = std::remove_cvref_t<T>;
         assign_new_value_type<U>(std::forward<T>(value)); 
     }
+    
 
     ~Variant(){ 
 
@@ -122,7 +176,52 @@ public:
         type_index = variant_npos;
     }
 
+    constexpr Variant& operator=(const Variant& other){
+        if(other.valueless_by_exception())
+        {
+            type_index = variant_npos;
+            return *this;
+        }
+
+        try{
+            if(!valueless_by_exception()){
+                destroy_table[type_index](storage);
+            }
+            copy_construct_table[other.type_index](static_cast<void*>(storage), static_cast<const void*>(other.storage));
+            type_index = other.type_index; 
+        }
+        catch(std::exception& e){
+            type_index = variant_npos;
+        }
+
+        return *this;
+    }
+
+    constexpr Variant& operator=(Variant&& other){
+        if(other.valueless_by_exception())
+        {
+            type_index = variant_npos;
+            return *this;
+        }
+
+        try{
+            if(!valueless_by_exception()){
+                destroy_table[type_index](storage);
+            }
+            move_construct_table[other.type_index](static_cast<void*>(storage), static_cast<void*>(other.storage));
+            type_index = other.type_index; 
+        }
+        catch(std::exception& e){
+            type_index = variant_npos;
+        }
+        other.type_index = variant_npos;
+
+        return *this;
+    }
+
     template<typename T>
+    requires ((std::same_as<std::remove_cvref_t<T>, Types> || ...) || 
+            (std::same_as<T, Types> || ...))
     Variant& operator=(const T& value){
         constexpr size_t index = index_of<T, Types...>::value;
         if(index != type_index){
@@ -137,6 +236,8 @@ public:
     }
 
     template<typename T>
+    requires ((std::same_as<std::remove_cvref_t<T>, Types> || ...) || 
+            (std::same_as<T, Types> || ...))
     Variant& operator=(T&& value){
         using U = std::remove_cvref_t<T>;
         constexpr size_t index = index_of<U, Types...>::value;
@@ -150,6 +251,8 @@ public:
 
         return *this;
     }
+
+    
 
     template<size_t I>
     auto& get(){
@@ -210,4 +313,5 @@ public:
 
     constexpr bool valueless_by_exception() const noexcept{ return variant_npos == type_index; }
     constexpr size_t index() const { return type_index; }
+
 };
