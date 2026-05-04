@@ -4,3 +4,4 @@ experimenting and building certain C++ features to better understand how they wo
 # currently implemented features
 - std::optional
 - std::variant
+- std::function

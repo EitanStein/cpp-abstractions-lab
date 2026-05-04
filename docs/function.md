@@ -1,0 +1,7 @@
+- holds 4 pointers
+- - void* to the function
+- - - in the implementation here we used only heap allocations but std::function gives some aligned storage (32 byte) so that if the function is small enough it will be saved on the stack
+- - 3 pointers to delete, copy, invoke handles
+- - - invoke for calling the function
+- - - delete to clear the heap allocation (if needed)
+- - - copy for copy/move operations
