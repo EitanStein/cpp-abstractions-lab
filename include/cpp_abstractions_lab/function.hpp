@@ -32,6 +32,7 @@ private:
 
 public:
     Function() { object = nullptr; }
+    Function(nullptr_t) { object = nullptr; }
 
     // TODO add &&?
     template<typename Func>
@@ -88,5 +89,16 @@ public:
         copy = &copy_fn<Func>;
 
         return *this;
+    }
+
+    explicit operator bool() const{
+        return object != nullptr;
+    }
+
+    void swap(Function& other) noexcept{
+        std::swap(object, other.object);
+        std::swap(invoke, other.invoke);
+        std::swap(copy, other.copy);
+        std::swap(destroy, other.destroy);
     }
 };
