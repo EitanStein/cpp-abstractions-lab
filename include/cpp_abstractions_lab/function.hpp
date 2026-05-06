@@ -46,6 +46,9 @@ public:
     }
 
     R operator()(Args... args){
+        if(object == nullptr)
+            throw std::__throw_bad_function_call();
+
         return invoke(object, std::forward<Args>(args)...);
     }
 
