@@ -1,7 +1,16 @@
 #pragma once
 #include <utility>
+#include <exception>
 
 
+class bad_function_access : public std::exception{
+public:
+    bad_function_access() {}
+
+    const char* what() const noexcept override {
+        return "bad optional access";
+    }
+};
 
 template<typename>
 class Function;
@@ -48,7 +57,7 @@ public:
 
     R operator()(Args... args){
         if(object == nullptr)
-            throw std::__throw_bad_function_call();
+            throw bad_function_access();
 
         return invoke(object, std::forward<Args>(args)...);
     }
