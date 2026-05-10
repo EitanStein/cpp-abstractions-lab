@@ -2,6 +2,18 @@
 #include <utility>
 #include <exception>
 
+// TODO
+// add stack allocation option
+
+// make sure this works with 
+// lambdas
+// free functions
+// member functions
+// static functions
+
+// upgrade to support
+// constexpr functions
+// implement small function optimiziation
 
 class bad_function_access : public std::exception{
 public:
