@@ -12,14 +12,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # FetchContent_Declare(
 #   Catch2
 #   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-#   GIT_TAG        v3.5.2
+#   GIT_TAG        6ee0826dcae55ed1e06b2c5701981221e979e1e6 #3.15.0
 # )
 # FetchContent_MakeAvailable(Catch2)
 
 # FetchContent_Declare(
 #   spdlog
 #   GIT_REPOSITORY https://github.com/gabime/spdlog.git
-#   GIT_TAG v1.16.0 
+#   GIT_TAG        486b55554f11c9cccc913e11a87085b2a91f706f #1.16.0
 # )
 # FetchContent_MakeAvailable(spdlog)
 
