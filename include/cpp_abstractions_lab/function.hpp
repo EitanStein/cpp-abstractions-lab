@@ -83,11 +83,12 @@ public:
     Function& operator=(const Function& other){
         destroy(object);
 
-        copy = other.copy;
-        object = copy(other.object);
+        
+        object = other.copy(other.object);
 
         invoke = other.invoke;
         destroy = other.destroy;
+        copy = other.copy;
 
         return *this;
     }
@@ -106,13 +107,15 @@ public:
     }
 
     template<typename Func>
-    Function& operator=(const Func& func){
+    Function& operator=(Func&& func){
         destroy(object);
 
-        object = new Func(func);
-        invoke = &invoke_fn<Func>;
-        destroy = &delete_fn<Func>;
-        copy = &copy_fn<Func>;
+        using DecayedFunc = std::decay_t<Func>;
+        object = new DecayedFunc(std::forward<func>(func));
+
+        invoke = &invoke_fn<DecayedFunc>;
+        destroy = &delete_fn<DecayedFunc>;
+        copy = &copy_fn<DecayedFunc>;
 
         return *this;
     }
