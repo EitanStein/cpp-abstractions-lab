@@ -20,23 +20,23 @@ public:
     bad_function_access() {}
 
     const char* what() const noexcept override {
-        return "bad optional access";
+        return "bad function access";
     }
 };
 
 template<typename>
 class Function;
 
-template<typename R, typename... Args>
-class Function<R(Args...)> {
+template<typename ReturnType, typename... Args>
+class Function<ReturnType(Args...)> {
 private:
     void* object;
-    R(*invoke)(void*, Args&&...);
+    ReturnType(*invoke)(void*, Args&&...);
     void(*destroy)(void*);
     void*(*copy)(void*);
 
     template<typename Func>
-    static R invoke_fn(void* obj, Args&&... args){
+    static ReturnType invoke_fn(void* obj, Args&&... args){
         return (*static_cast<Func*>(obj))(std::forward<Args>(args)...);
     }
 
@@ -55,10 +55,16 @@ public:
     Function() { object = nullptr; }
     Function(nullptr_t) { object = nullptr; }
 
-    // TODO add &&?
     template<typename Func>
-    Function(Func func) {
+    Function(Func&& func) {
         object = new Func(std::move(func));
+        invoke = &invoke_fn<Func>;
+        destroy = &delete_fn<Func>;
+        copy = &copy_fn<Func>;
+    }
+    template<typename Func>
+    Function(const Func& func) {
+        object = new Func(func);
         invoke = &invoke_fn<Func>;
         destroy = &delete_fn<Func>;
         copy = &copy_fn<Func>;
@@ -67,7 +73,7 @@ public:
         destroy(object);
     }
 
-    R operator()(Args... args){
+    ReturnType operator()(Args... args){
         if(object == nullptr)
             throw bad_function_access();
 
@@ -77,16 +83,16 @@ public:
     Function& operator=(const Function& other){
         destroy(object);
 
+        copy = other.copy;
         object = copy(other.object);
 
         invoke = other.invoke;
         destroy = other.destroy;
-        copy = other.copy;
 
         return *this;
     }
 
-    Function& operator=(Function&& other){
+    Function& operator=(Function&& other) noexcept{
         destroy(object);
 
         object = std::move(other.object);
@@ -99,12 +105,11 @@ public:
         return *this;
     }
 
-    // TODO add &&?
     template<typename Func>
-    Function& operator=(Func func){
+    Function& operator=(const Func& func){
         destroy(object);
 
-        object = new Func(std::move(func));
+        object = new Func(func);
         invoke = &invoke_fn<Func>;
         destroy = &delete_fn<Func>;
         copy = &copy_fn<Func>;
