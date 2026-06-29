@@ -36,8 +36,8 @@ private:
     void*(*copy)(void*);
 
     template<typename Func>
-    static ReturnType invoke_fn(void* obj, Args&&... args){
-        return (*static_cast<Func*>(obj))(std::forward<Args>(args)...);
+    static ReturnType invoke_fn(Args&&... args){
+        return (*static_cast<Func*>(object))(std::forward<Args>(args)...);
     }
 
     template<typename Func>
@@ -77,7 +77,7 @@ public:
         if(object == nullptr)
             throw bad_function_access();
 
-        return invoke(object, std::forward<Args>(args)...);
+        return invoke(std::forward<Args>(args)...);
     }
 
     Function& operator=(const Function& other){
