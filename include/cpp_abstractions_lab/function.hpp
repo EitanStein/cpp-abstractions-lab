@@ -36,8 +36,8 @@ private:
     void*(*copy)(void*);
 
     template<typename Func>
-    static ReturnType invoke_fn(Args&&... args){
-        return (*static_cast<Func*>(object))(std::forward<Args>(args)...);
+    static ReturnType invoke_fn(void* obj, Args&&... args){
+        return (*static_cast<Func*>(obj))(std::forward<Args>(args)...);
     }
 
     template<typename Func>
@@ -57,10 +57,12 @@ public:
 
     template<typename Func>
     Function(Func&& func) {
-        object = new Func(std::move(func));
-        invoke = &invoke_fn<Func>;
-        destroy = &delete_fn<Func>;
-        copy = &copy_fn<Func>;
+        using DecayedFunc = std::decay_t<Func>;
+        object = new DecayedFunc(std::forward<Func>(func));
+
+        invoke = &invoke_fn<DecayedFunc>;
+        destroy = &delete_fn<DecayedFunc>;
+        copy = &copy_fn<DecayedFunc>;
     }
     template<typename Func>
     Function(const Func& func) {
@@ -77,7 +79,7 @@ public:
         if(object == nullptr)
             throw bad_function_access();
 
-        return invoke(std::forward<Args>(args)...);
+        return invoke(object, std::forward<Args>(args)...);
     }
 
     Function& operator=(const Function& other){
@@ -111,7 +113,7 @@ public:
         destroy(object);
 
         using DecayedFunc = std::decay_t<Func>;
-        object = new DecayedFunc(std::forward<func>(func));
+        object = new DecayedFunc(std::forward<Func>(func));
 
         invoke = &invoke_fn<DecayedFunc>;
         destroy = &delete_fn<DecayedFunc>;
