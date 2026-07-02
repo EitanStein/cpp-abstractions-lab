@@ -15,7 +15,7 @@ auto func(T t, U u) -> decltype(t + u){
 // decltype(x) -> x's exact type
 // decltype((x)) -> x's value category
 void decltype_demo(){
-    std::println("Testing decltype:");
+    std::println("\nTesting decltype:");
     int x = 5;
     
     print_type<decltype(x)>();     // int

@@ -5,7 +5,7 @@
 
 
 void testing_auto_deduction(){
-    std::println("Testing auto:");
+    std::println("\nTesting auto:");
     {
         auto x = 5;
         print_type<decltype(x)>();   // int
@@ -37,6 +37,19 @@ void testing_auto_deduction(){
     {
         auto x = [](int x){return "my lambda";};
         print_type<decltype(x)>();      // testing_auto_deduction()::<lambda(int)>
+    }
+    {
+        int x = 5;
+        const int& y = x;
+        auto z = y;
+
+        auto a = [&x]()->const int&{return x;}();
+
+        print_type<decltype(x)>(); // int
+        print_type<decltype(y)>(); // const int&
+        // auto strips const and ref
+        print_type<decltype(z)>(); // int
+        print_type<decltype(a)>(); // int
     }
 
     // std::vector<auto> x{1,2,3} - compile error can't use auto inside <> 
