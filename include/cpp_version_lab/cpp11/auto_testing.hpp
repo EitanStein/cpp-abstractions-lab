@@ -1,18 +1,11 @@
 #pragma once
-#include <print>
-#include <vector>
-#include <string>
-#include <string_view>
 
-template<typename T>
-void print_type(){
-    std::string_view name = __PRETTY_FUNCTION__;
-    size_t start = name.find("T = ") + 4;
-    size_t end = name.find("]");
-    println("{}", name.substr(start, end-start));
-}
+#include "utils/helper_funcs.hpp"
+#include <vector>
+
 
 void testing_auto_deduction(){
+    std::println("Testing auto:");
     {
         auto x = 5;
         print_type<decltype(x)>();   // int
