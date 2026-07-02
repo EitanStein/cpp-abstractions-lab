@@ -18,3 +18,6 @@ target_link_libraries(optional_demo cpp_abstractions_lab)
 
 add_executable(function_demo examples/function_demo.cpp)
 target_link_libraries(function_demo cpp_abstractions_lab)
+
+
+add_subdirectory(version_testing)
