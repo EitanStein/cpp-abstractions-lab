@@ -47,7 +47,9 @@ void testing_auto_deduction(){
     }
 
     // std::vector<auto> x{1,2,3} - compile error can't use auto inside <> 
+}
 
-    // auto in return type of func not allowed in C++11 - added in a later version
-    // auto func();
+// fails in C++11 without trailing return type
+auto func(int x) -> int{
+    return x;
 }
